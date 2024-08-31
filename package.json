@@ -1,0 +1,8 @@
+{
+  "name": "AutoDash-front",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/luucaslfs/AutoDash-front.git",
+  "author": "Lucas Florêncio de Sousa <lfs@cin.ufpe.br>",
+  "license": "MIT"
+}
