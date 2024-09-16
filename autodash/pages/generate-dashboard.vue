@@ -25,6 +25,14 @@
       }}</pre>
     </div>
 
+    <div v-if="filePreview" class="mb-4">
+      <label class="block mb-2 font-semibold">Select AI Model:</label>
+      <select v-model="selectedModel" class="w-full p-2 border border-gray-300 rounded">
+        <option value="claude">Claude</option>
+        <option value="openai">OpenAI</option>
+      </select>
+    </div>
+
     <button
       v-if="filePreview"
       @click="generateDashboard"
@@ -57,12 +65,17 @@
 import { ref } from "vue";
 import { useRuntimeConfig } from "#app";
 import Papa from "papaparse";
+
 const config = useRuntimeConfig();
+
+// Estado reativo
 const filePreview = ref("");
 const generatedCode = ref("");
 const isGenerating = ref(false);
 const previewData = ref(null);
+const selectedModel = ref("claude"); // Valor padrão
 
+// Handler de upload de arquivo
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (file) {
@@ -70,13 +83,13 @@ const handleFileUpload = async (event) => {
     reader.onload = (e) => {
       const content = e.target.result;
 
-      // Use Papa Parse to correctly parse the CSV
+      // Use Papa Parse para analisar corretamente o CSV
       Papa.parse(content, {
         complete: (results) => {
           const headers = results.data[0];
           const data = results.data
             .slice(1)
-            .filter((row) => row.some((cell) => cell.trim() !== "")); // Remove empty rows
+            .filter((row) => row.some((cell) => cell.trim() !== "")); // Remove linhas vazias
 
           filePreview.value = results.data
             .slice(0, 6)
@@ -96,12 +109,19 @@ const handleFileUpload = async (event) => {
   }
 };
 
+// Função para gerar o dashboard
 const generateDashboard = async () => {
   if (!previewData.value) return;
 
   isGenerating.value = true;
   try {
-    console.log("Sending data:", previewData.value);
+    console.log("Sending data:", previewData.value, "Model:", selectedModel.value);
+
+    const requestBody = {
+      table_data: previewData.value,
+      model: selectedModel.value,
+    };
+
     const response = await fetch(
       `${config.public.apiBase}/api/v1/generate-dashboard`,
       {
@@ -109,7 +129,7 @@ const generateDashboard = async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(previewData.value),
+        body: JSON.stringify(requestBody),
       }
     );
 
@@ -129,8 +149,13 @@ const generateDashboard = async () => {
   }
 };
 
+// Função para copiar o código gerado
 const copyCode = () => {
   navigator.clipboard.writeText(generatedCode.value);
   alert("Code copied to clipboard!");
 };
 </script>
+
+<style scoped>
+/* Adicione estilos personalizados aqui, se necessário */
+</style>
