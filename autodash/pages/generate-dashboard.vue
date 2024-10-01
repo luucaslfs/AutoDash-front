@@ -44,7 +44,7 @@
       {{ isGenerating ? "Generating..." : "Generate Dashboard" }}
     </button>
 
-    <!-- Código Gerado e Botão de Download -->
+    <!-- Código Gerado e Botões -->
     <div v-if="generatedCode" class="mb-4">
       <h2 class="text-xl font-semibold mb-2">
         Generated Streamlit Dashboard Code
@@ -59,40 +59,42 @@
         </button>
       </div>
 
-      <!-- Botão de Download do Projeto Estruturado -->
-      <button
-        @click="downloadZip"
-        :disabled="!uniqueId || isDownloading"
-        class="relative bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded mt-4 flex items-center"
-      >
-        <span v-if="isDownloading">Downloading...</span>
-        <span v-else>Download Project</span>
-        <svg
-          v-if="isDownloading"
-          class="animate-spin h-5 w-5 ml-2 text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
+      <div class="flex space-x-4 mt-4">
+        <!-- Botão de Download do Projeto Estruturado -->
+        <button
+          @click="downloadZip"
+          :disabled="!uniqueId || isDownloading"
+          class="relative bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded flex items-center"
         >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          ></path>
-        </svg>
-      </button>
+          <span v-if="isDownloading">Downloading...</span>
+          <span v-else>Download Project</span>
+          <svg v-if="isDownloading" class="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+        </button>
+
+        <!-- Botão para Criar Repositório GitHub -->
+        <button
+          @click="createGitHubRepo"
+          :disabled="!uniqueId || isCreatingRepo"
+          class="relative bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center"
+        >
+          <span v-if="isCreatingRepo">Creating Repo...</span>
+          <span v-else>Create GitHub Repo</span>
+          <svg v-if="isCreatingRepo" class="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Mensagem de Erro -->
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error" class="error mt-4 text-red-500">{{ error }}</p>
+
+    <!-- Mensagem de Sucesso -->
+    <p v-if="successMessage" class="success mt-4 text-green-500">{{ successMessage }}</p>
   </div>
 </template>
 
@@ -100,18 +102,22 @@
 import { ref } from "vue";
 import { useRuntimeConfig } from "#app";
 import Papa from "papaparse";
+import { useAuthStore } from "~/stores/auth";
 
 const config = useRuntimeConfig();
+const authStore = useAuthStore();
 
 // Estado reativo
 const filePreview = ref("");
 const generatedCode = ref("");
-const uniqueId = ref(""); // Armazena o unique_id
+const uniqueId = ref("");
 const isGenerating = ref(false);
-const isDownloading = ref(false); // Controla o estado de download
+const isDownloading = ref(false);
+const isCreatingRepo = ref(false);
 const previewData = ref(null);
-const selectedModel = ref("claude"); // Valor padrão
-const error = ref(""); // Estado para mensagens de erro
+const selectedModel = ref("claude");
+const error = ref("");
+const successMessage = ref("");
 
 // Handler de upload de arquivo
 const handleFileUpload = async (event) => {
@@ -121,13 +127,12 @@ const handleFileUpload = async (event) => {
     reader.onload = (e) => {
       const content = e.target.result;
 
-      // Use Papa Parse para analisar corretamente o CSV
       Papa.parse(content, {
         complete: (results) => {
           const headers = results.data[0];
           const data = results.data
             .slice(1)
-            .filter((row) => row.some((cell) => cell.trim() !== "")); // Remove linhas vazias
+            .filter((row) => row.some((cell) => cell.trim() !== ""));
 
           filePreview.value = results.data
             .slice(0, 6)
@@ -139,7 +144,7 @@ const handleFileUpload = async (event) => {
         },
         error: (error) => {
           console.error("Error parsing CSV:", error);
-          alert("Error parsing CSV file. Please check the file format.");
+          error.value = "Error parsing CSV file. Please check the file format.";
         },
       });
     };
@@ -153,9 +158,8 @@ const generateDashboard = async () => {
 
   isGenerating.value = true;
   error.value = "";
+  successMessage.value = "";
   try {
-    console.log("Sending data:", previewData.value, "Model:", selectedModel.value);
-
     const requestBody = {
       table_data: previewData.value,
       model: selectedModel.value,
@@ -174,13 +178,13 @@ const generateDashboard = async () => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Error response:", errorText);
       throw new Error(`Failed to generate dashboard: ${errorText}`);
     }
 
     const result = await response.json();
     generatedCode.value = result.dashboard_code;
-    uniqueId.value = result.unique_id; // Armazena o unique_id
+    uniqueId.value = result.unique_id;
+    successMessage.value = "Dashboard generated successfully!";
   } catch (error) {
     console.error("Error generating dashboard:", error);
     error.value = `Failed to generate dashboard: ${error.message}`;
@@ -192,7 +196,7 @@ const generateDashboard = async () => {
 // Função para copiar o código gerado
 const copyCode = () => {
   navigator.clipboard.writeText(generatedCode.value);
-  alert("Code copied to clipboard!");
+  successMessage.value = "Code copied to clipboard!";
 };
 
 // Função para baixar o projeto estruturado
@@ -204,6 +208,7 @@ const downloadZip = async () => {
 
   isDownloading.value = true;
   error.value = "";
+  successMessage.value = "";
 
   try {
     const requestBody = {
@@ -223,7 +228,6 @@ const downloadZip = async () => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Error response:", errorText);
       throw new Error(`Failed to download project: ${errorText}`);
     }
 
@@ -236,6 +240,8 @@ const downloadZip = async () => {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
+
+    successMessage.value = "Project downloaded successfully!";
 
     // Limpar o estado após o download
     generatedCode.value = "";
@@ -250,14 +256,57 @@ const downloadZip = async () => {
     isDownloading.value = false;
   }
 };
+
+// Função para criar o repositório GitHub
+const createGitHubRepo = async () => {
+  if (!uniqueId.value || !generatedCode.value) {
+    error.value = "Please generate the dashboard first.";
+    return;
+  }
+
+  isCreatingRepo.value = true;
+  error.value = "";
+  successMessage.value = "";
+
+  try {
+    const repoName = `autodash-${uniqueId.value}`;
+    const requestBody = {
+      access_token: authStore.token,
+      repo_name: repoName,
+      description: "AutoDash generated Streamlit dashboard",
+      table_data: previewData.value,
+      generated_code: generatedCode.value
+    };
+
+    const response = await fetch(
+      `${config.public.apiBase}/api/v1/create-github-repo`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create GitHub repository: ${errorText}`);
+    }
+
+    const result = await response.json();
+    successMessage.value = `GitHub repository created successfully! URL: ${result.repo_url}`;
+  } catch (error) {
+    console.error("Error creating GitHub repository:", error);
+    error.value = `Failed to create GitHub repository: ${error.message}`;
+  } finally {
+    isCreatingRepo.value = false;
+  }
+};
 </script>
 
 <style scoped>
-/* Adicione estilos personalizados aqui, se necessário */
 .container {
   max-width: 800px;
-}
-.error {
-  color: red;
 }
 </style>

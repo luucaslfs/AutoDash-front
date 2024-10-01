@@ -20,8 +20,10 @@ const loginWithGitHub = () => {
   const redirectUri = encodeURIComponent(
     `${window.location.origin}/github/callback`
   );
+  //const state = Math.random().toString(36).substring(7);
   const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${redirectUri}`;
 
+  console.log("GitHub Auth URL:", githubAuthUrl); // Log para debug
   window.location.href = githubAuthUrl;
 };
 </script>
