@@ -289,12 +289,18 @@ const createGitHubRepo = async () => {
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create GitHub repository: ${errorText}`);
+    const result = await response.json();
+
+    if (result.message === "GitHub App not installed") {
+      console.log("Redirecting to GitHub App installation page...");
+      window.location.href = result.installation_url;
+      return;
     }
 
-    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.detail || 'Failed to create repository');
+    }
+
     successMessage.value = `GitHub repository created successfully! URL: ${result.repo_url}`;
   } catch (error) {
     console.error("Error creating GitHub repository:", error);
