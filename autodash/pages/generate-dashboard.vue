@@ -106,15 +106,15 @@
 
       <!-- Resultado da criação do repositório GitHub -->
       <div v-if="repoCreationResult" class="mt-8 bg-gray-100 shadow-md rounded-lg p-6">
-        <h3 class="text-2xl font-bold mb-4 text-gray-800">GitHub Repository Created</h3>
+        <h3 class="text-2xl font-bold mb-4 text-green-500">GitHub Repository Created</h3>
         <div class="space-y-4">
           <div>
             <span class="font-semibold text-gray-700">Result:</span>
-            <span class="ml-2">{{ repoCreationResult.message }}</span>
+            <span class="ml-2 text-[var(--color-secondary)]">{{ repoCreationResult.message }}</span>
           </div>
           <div>
             <span class="font-semibold text-gray-700">Repository URL:</span>
-            <a :href="repoCreationResult.repo_url" target="_blank" class="ml-2 text-[#2ca0e2] hover:underline">
+            <a :href="repoCreationResult.repo_url" target="_blank" class="ml-2 text-[var(--color-secondary)] hover:underline">
               {{ repoCreationResult.repo_url }}
             </a>
           </div>
