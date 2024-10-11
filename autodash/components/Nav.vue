@@ -1,7 +1,7 @@
 <template>
-  <nav class="bg-[var(--color-surface)] p-4 shadow-md">
+  <nav class="bg-[var(--color-primary)] p-4 shadow-md">
     <div class="container mx-auto flex justify-between items-center">
-      <NuxtLink to="/" class="text-[var(--color-primary)] text-2xl font-bold">AutoDash</NuxtLink>
+      <NuxtLink to="/" class="text-2xl font-bold">AutoDash</NuxtLink>
       <div class="flex items-center space-x-4">
         <NuxtLink to="/" class="nav-link">Home</NuxtLink>
         <NuxtLink v-if="isAuthenticated" to="/generate-dashboard" class="nav-link">Generate Dashboard</NuxtLink>

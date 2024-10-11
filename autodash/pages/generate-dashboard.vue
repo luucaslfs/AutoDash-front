@@ -1,137 +1,130 @@
 <template>
-  <div class="container mx-auto p-4 bg-[#01204c] text-white min-h-screen">
-    <h1 class="text-3xl font-bold mb-6 text-[#794cec]">Generate Dashboard</h1>
+  <div class="bg-white min-h-screen">
+    <!-- Main Content -->
+    <main class="container mx-auto p-8">
+      <h2 class="text-[var(--color-primary)] text-3xl font-bold mb-6">Generate Dashboard</h2>
 
-    <!-- Upload de Arquivo -->
-    <div class="flex justify-center mb-6">
-      <label
-        for="file-upload"
-        class="cursor-pointer bg-[#794cec] hover:bg-[#6a3dd3] text-white font-bold py-2 px-4 rounded transition duration-300"
+      <!-- Upload de Arquivo -->
+      <div class="flex justify-center mb-6">
+        <label
+          for="file-upload"
+          class="btn-primary"
+        >
+          Upload File
+          <input
+            id="file-upload"
+            type="file"
+            class="hidden"
+            @change="handleFileUpload"
+            accept=".csv,.xlsx"
+          />
+        </label>
+      </div>
+
+      <!-- Pré-visualização dos Dados -->
+      <div v-if="previewData" class="mb-6">
+        <h3 class="text-2xl font-semibold mb-2 text-[var(--color-primary)]">Data Preview</h3>
+        <div class="preview-container border border-gray-200 rounded-lg">
+          <table class="preview-table w-full">
+            <thead>
+              <tr>
+                <th v-for="header in previewData.columns" :key="header" class="px-4 py-2 text-left text-white-800 bg-gray-100 sticky top-0 font-semibold">
+                  {{ header }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in previewData.data.slice(0, 5)" :key="index" class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                <td v-for="(cell, cellIndex) in row" :key="cellIndex" class="px-4 py-2 border-b border-gray-200 text-gray-700">
+                  {{ cell }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-sm text-gray-600">
+          Showing first 5 rows of {{ previewData.data.length }} total rows.
+        </p>
+      </div>
+
+      <!-- Seleção do Modelo AI -->
+      <div v-if="filePreview" class="mb-6">
+        <label class="block mb-2 font-semibold text-[var(--color-primary)]">Select AI Model:</label>
+        <select v-model="selectedModel" class="input-field">
+          <option value="claude">Claude</option>
+          <option value="openai">OpenAI</option>
+        </select>
+      </div>
+
+      <!-- Botão para Gerar Dashboard -->
+      <button
+        v-if="filePreview"
+        @click="generateDashboard"
+        :disabled="isGenerating"
+        class="btn-primary w-full"
       >
-        Upload File
-        <input
-          id="file-upload"
-          type="file"
-          class="hidden"
-          @change="handleFileUpload"
-          accept=".csv,.xlsx"
-        />
-      </label>
-    </div>
+        {{ isGenerating ? "Generating..." : "Generate Dashboard" }}
+      </button>
 
-    <!-- Pré-visualização dos Dados -->
-    <div v-if="previewData" class="mb-6">
-      <h2 class="text-2xl font-semibold mb-2 text-[var(--color-primary)]">Data Preview</h2>
-      <div class="preview-container">
-        <table class="preview-table">
-          <thead>
-            <tr>
-              <th v-for="header in previewData.columns" :key="header" class="px-4 py-2 text-left text-[var(--color-primary)] bg-[var(--color-surface)] sticky top-0">
-                {{ header }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, index) in previewData.data.slice(0, 5)" :key="index" class="hover:bg-[var(--color-surface-light)] transition-colors duration-150 ease-in-out">
-              <td v-for="(cell, cellIndex) in row" :key="cellIndex" class="px-4 py-2 border-b border-[var(--color-surface-light)]">
-                {{ cell }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="mt-2 text-sm text-[var(--color-text-light)]">
-        Showing first 5 rows of {{ previewData.data.length }} total rows.
-      </p>
-    </div>
-
-    <!-- Seleção do Modelo AI -->
-    <div v-if="filePreview" class="mb-6">
-      <label class="block mb-2 font-semibold text-[#794cec]">Select AI Model:</label>
-      <select v-model="selectedModel" class="w-full p-2 border border-[#2ca0e2] rounded bg-[#02285f] text-white">
-        <option value="claude">Claude</option>
-        <option value="openai">OpenAI</option>
-      </select>
-    </div>
-
-    <!-- Botão para Gerar Dashboard -->
-    <button
-      v-if="filePreview"
-      @click="generateDashboard"
-      :disabled="isGenerating"
-      class="bg-[#2ca0e2] hover:bg-[#2590cc] text-white font-bold py-2 px-4 rounded mb-6 transition duration-300"
-    >
-      {{ isGenerating ? "Generating..." : "Generate Dashboard" }}
-    </button>
-
-    <!-- Código Gerado e Botões -->
-    <div v-if="generatedCode" class="mb-6">
-      <h2 class="text-2xl font-semibold mb-2 text-[#794cec]">
-        Generated Streamlit Dashboard Code
-      </h2>
-      <div class="relative">
-        <pre class="bg-[#02285f] p-4 rounded overflow-x-auto text-[#e0e0e0]">{{ generatedCode }}</pre>
-        <button
-          @click="copyCode"
-          class="absolute top-2 right-2 bg-[#794cec] hover:bg-[#6a3dd3] text-white font-bold py-1 px-2 rounded text-sm transition duration-300"
-        >
-          Copy
-        </button>
-      </div>
-
-      <div class="flex space-x-4 mt-4">
-        <!-- Botão de Download do Projeto Estruturado -->
-        <button
-          @click="downloadZip"
-          :disabled="!uniqueId || isDownloading"
-          class="relative bg-[#794cec] hover:bg-[#6a3dd3] text-white font-bold py-2 px-4 rounded flex items-center transition duration-300"
-        >
-          <span v-if="isDownloading">Downloading...</span>
-          <span v-else>Download Project</span>
-          <svg v-if="isDownloading" class="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-        </button>
-
-        <!-- Botão para Criar Repositório GitHub -->
-        <button
-          @click="createGitHubRepo"
-          :disabled="!uniqueId || isCreatingRepo"
-          class="relative bg-[#2ca0e2] hover:bg-[#2590cc] text-white font-bold py-2 px-4 rounded flex items-center transition duration-300"
-        >
-          <span v-if="isCreatingRepo">Creating Repo...</span>
-          <span v-else>Create GitHub Repo</span>
-          <svg v-if="isCreatingRepo" class="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Resultado da criação do repositório GitHub -->
-    <div v-if="repoCreationResult" class="mt-8 bg-[#02285f] shadow-md rounded-lg p-6">
-      <h2 class="text-2xl font-bold mb-4 text-[#794cec]">GitHub Repository Created</h2>
-      <div class="space-y-4">
-        <div>
-          <span class="font-semibold text-[#794cec]">Result:</span>
-          <span class="ml-2">{{ repoCreationResult.message }}</span>
+      <!-- Código Gerado e Botões -->
+      <div v-if="generatedCode" class="mt-8">
+        <h3 class="text-2xl font-semibold mb-2 text-gray-700">
+          Generated Streamlit Dashboard Code
+        </h3>
+        <div class="relative">
+          <pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto text-gray-800">{{ generatedCode }}</pre>
+          <button
+            @click="copyCode"
+            class="absolute top-2 right-2 btn-secondary text-sm"
+          >
+            Copy
+          </button>
         </div>
-        <div>
-          <span class="font-semibold text-[#794cec]">Repository URL:</span>
-          <a :href="repoCreationResult.repo_url" target="_blank" class="ml-2 text-[#2ca0e2] hover:underline">
-            {{ repoCreationResult.repo_url }}
-          </a>
+
+        <div class="flex space-x-4 mt-4">
+          <!-- Botão de Download do Projeto Estruturado -->
+          <button
+            @click="downloadZip"
+            :disabled="!uniqueId || isDownloading"
+            class="btn-primary flex-1"
+          >
+            <span v-if="isDownloading">Downloading...</span>
+            <span v-else>Download Project</span>
+          </button>
+
+          <!-- Botão para Criar Repositório GitHub -->
+          <button
+            @click="createGitHubRepo"
+            :disabled="!uniqueId || isCreatingRepo"
+            class="btn-secondary flex-1"
+          >
+            <span v-if="isCreatingRepo">Creating Repo...</span>
+            <span v-else>Create GitHub Repo</span>
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Botão para Limpar Estado -->
+      <!-- Resultado da criação do repositório GitHub -->
+      <div v-if="repoCreationResult" class="mt-8 bg-gray-100 shadow-md rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800">GitHub Repository Created</h3>
+        <div class="space-y-4">
+          <div>
+            <span class="font-semibold text-gray-700">Result:</span>
+            <span class="ml-2">{{ repoCreationResult.message }}</span>
+          </div>
+          <div>
+            <span class="font-semibold text-gray-700">Repository URL:</span>
+            <a :href="repoCreationResult.repo_url" target="_blank" class="ml-2 text-[#2ca0e2] hover:underline">
+              {{ repoCreationResult.repo_url }}
+            </a>
+          </div>
+        </div>
+      </div>
 
-    <!-- Mensagem de Erro -->
-    <p v-if="error" class="error mt-4 text-red-500">{{ error }}</p>
+      <!-- Mensagem de Erro -->
+      <p v-if="error" class="error mt-4 text-red-500">{{ error }}</p>
 
+    </main>
   </div>
 </template>
 
@@ -367,9 +360,9 @@ const createGitHubRepo = async () => {
 .preview-container {
   height: 260px; /* Altura ajustada para 5 linhas */
   overflow: auto;
-  border: 1px solid var(--color-surface-light);
+  border: 1px solid var(--color-primary);
   border-radius: 0.5rem;
-  background-color: var(--color-surface);
+  background-color: white;
 }
 
 .preview-table {
@@ -382,7 +375,7 @@ const createGitHubRepo = async () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--color-surface);
+  background-color: var(--color-primary);
 }
 
 .preview-table td {
@@ -397,18 +390,18 @@ const createGitHubRepo = async () => {
 }
 
 .preview-container::-webkit-scrollbar-track {
-  background: var(--color-surface-light);
+  background: gray;
 }
 
 .preview-container::-webkit-scrollbar-thumb {
-  background-color: var(--color-primary);
+  background-color: var(--color-secondary);
   border-radius: 6px;
-  border: 3px solid var(--color-surface-light);
+  border: 3px solid grey;
 }
 
 /* Estiliza a barra de rolagem para Firefox */
 .preview-container {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-primary) var(--color-surface-light);
+  scrollbar-color: var(--color-primary);
 }
 </style>
